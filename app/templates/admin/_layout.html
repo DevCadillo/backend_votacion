@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block nav %}{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-brand">
+      <span class="admin-brand-mark">✦</span>
+      <div>
+        <div class="fw-bold">Luz del Mundo</div>
+        <div class="small opacity-75">Awards · Administración</div>
+      </div>
+    </div>
+
+    <nav class="admin-nav" aria-label="Navegación administrativa">
+      <a class="admin-nav-link {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}"><span class="nav-icon">✦</span><span>Dashboard</span></a>
+      {% set ap = current_user.admin_profile %}
+      {% if ap and (ap.nivel=='superadmin' or ap.puede_elecciones) %}<a class="admin-nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.') and 'eleccion' in request.endpoint else '' }}" href="{{url_for('admin.elecciones')}}"><span class="nav-icon">◷</span><span>Elecciones</span></a>{% endif %}
+      {% if ap and (ap.nivel=='superadmin' or ap.puede_categorias) %}<a class="admin-nav-link {{ 'active' if request.endpoint=='admin.categorias' else '' }}" href="{{url_for('admin.categorias')}}"><span class="nav-icon">◇</span><span>Categorías</span></a>{% endif %}
+      {% if ap and (ap.nivel=='superadmin' or ap.puede_candidatos) %}<a class="admin-nav-link {{ 'active' if request.endpoint=='admin.candidatos' else '' }}" href="{{url_for('admin.candidatos')}}"><span class="nav-icon">★</span><span>Participantes</span></a>{% endif %}
+      {% if ap and (ap.nivel=='superadmin' or ap.puede_votantes) %}<a class="admin-nav-link {{ 'active' if request.endpoint=='admin.votantes' else '' }}" href="{{url_for('admin.votantes')}}"><span class="nav-icon">♙</span><span>Votantes</span></a>{% endif %}
+      {% if ap and (ap.nivel=='superadmin' or ap.puede_resultados) %}<a class="admin-nav-link {{ 'active' if request.endpoint=='admin.resultados' else '' }}" href="{{url_for('admin.resultados')}}"><span class="nav-icon">▥</span><span>Resultados</span></a>{% endif %}
+      {% if ap and ap.nivel=='superadmin' %}<a class="admin-nav-link {{ 'active' if request.endpoint=='admin.usuarios' else '' }}" href="{{url_for('admin.usuarios')}}"><span class="nav-icon">⚙</span><span>Administradores</span></a>{% endif %}
+    </nav>
+    <div class="admin-logout">
+      <a href="{{ url_for('auth.logout') }}" class="admin-nav-link">
+        <span class="nav-icon">↪</span><span>Cerrar sesión</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="admin-mobile-nav">
+    <div class="d-flex align-items-center justify-content-between gap-2">
+      <div class="fw-bold">✦ Luz del Mundo</div>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-light">Salir</a>
+    </div><div class="admin-mobile-links"><a href="{{url_for('admin.dashboard')}}">✦ Inicio</a>{% if ap and (ap.nivel=='superadmin' or ap.puede_categorias) %}<a href="{{url_for('admin.categorias')}}">◇ Categorías</a>{% endif %}{% if ap and (ap.nivel=='superadmin' or ap.puede_candidatos) %}<a href="{{url_for('admin.candidatos')}}">★ Participantes</a>{% endif %}{% if ap and ap.nivel=='superadmin' %}<a href="{{url_for('admin.usuarios')}}">⚙ Admins</a>{% endif %}</div>
+  </div>
+
+  <section class="admin-main">
+    {% block admin_content %}{% endblock %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ 'Editar' if eleccion else 'Nueva' }} elección{% endblock %}
+{% block admin_content %}
+<a href="{{ url_for('admin.elecciones') }}" class="small text-muted d-inline-block mb-3">&larr; Volver</a>
+<div class="card p-4" style="max-width:640px;">
+  <h5 class="fw-bold mb-3">{{ 'Editar elección' if eleccion else 'Nueva elección' }}</h5>
+  <form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Nombre</label>
+      <input type="text" name="nombre" class="form-control" value="{{ eleccion.nombre if eleccion else '' }}" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Institución</label>
+      <input type="text" name="institucion" class="form-control" value="{{ eleccion.institucion if eleccion else '' }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Descripción</label>
+      <textarea name="descripcion" class="form-control" rows="3">{{ eleccion.descripcion if eleccion else '' }}</textarea>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold">Fecha y hora de inicio</label>
+        <input type="datetime-local" name="fecha_inicio" class="form-control"
+               value="{{ eleccion.fecha_inicio.strftime('%Y-%m-%dT%H:%M') if eleccion else '' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold">Fecha y hora de finalización</label>
+        <input type="datetime-local" name="fecha_fin" class="form-control"
+               value="{{ eleccion.fecha_fin.strftime('%Y-%m-%dT%H:%M') if eleccion else '' }}" required>
+      </div>
+    </div>
+    <div class="form-check mb-2">
+      <input class="form-check-input" type="checkbox" name="resultados_publicos" {{ 'checked' if eleccion and eleccion.resultados_publicos }}>
+      <label class="form-check-label small">Resultados públicos</label>
+    </div>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="secreta" {{ 'checked' if not eleccion or eleccion.secreta }}>
+      <label class="form-check-label small">Votación secreta</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Guardar elección</button>
+  </form>
+</div>
+{% endblock %}

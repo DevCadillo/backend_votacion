@@ -1,0 +1,35 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Elecciones{% endblock %}
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">Elecciones</h4>
+  <a href="{{ url_for('admin.nueva_eleccion') }}" class="btn btn-primary btn-sm">+ Nueva elección</a>
+</div>
+
+{% for e in elecciones %}
+<div class="card p-3 mb-3">
+  <div class="d-flex justify-content-between flex-wrap gap-2">
+    <div>
+      <span class="badge {{ 'badge-soft-green' if e.estado=='activa' else 'badge-soft-gold' if e.estado=='proxima' else 'bg-light text-muted' }}">
+        {{ {'activa':'Activa','proxima':'Próximamente','finalizada':'Finalizada'}[e.estado] }}
+      </span>
+      <h6 class="fw-bold mt-2 mb-1">{{ e.nombre }}</h6>
+      <p class="small text-muted mb-1">{{ e.descripcion }}</p>
+      <div class="small text-muted">{{ e.fecha_inicio.strftime('%d/%m/%Y %H:%M') }} — {{ e.fecha_fin.strftime('%d/%m/%Y %H:%M') }}</div>
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <a href="{{ url_for('admin.editar_eleccion', election_id=e.id) }}" class="btn btn-outline-secondary btn-sm">Editar</a>
+      <form method="post" action="{{ url_for('admin.cambiar_estado_eleccion', election_id=e.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="estado" value="{{ 'finalizada' if e.estado == 'activa' else 'activa' }}">
+        <button class="btn btn-sm w-100 {{ 'btn-outline-danger' if e.estado=='activa' else 'btn-outline-success' }}">
+          {{ 'Desactivar' if e.estado == 'activa' else 'Activar' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% else %}
+<p class="text-muted">Aún no hay elecciones creadas.</p>
+{% endfor %}
+{% endblock %}

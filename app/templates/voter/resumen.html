@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Mi recorrido · Luz del Mundo Awards{% endblock %}
+{% block nav %}{% include "voter/_nav.html" %}{% endblock %}
+{% block content %}
+<section class="summary-hero">
+  <div class="award-kicker">✦ TU RECORRIDO ✦</div>
+  <h1>Resumen de votación</h1>
+  <p class="mb-3 opacity-75">Has completado {{ completas|length }} de {{ total }} categorías.</p>
+  <div class="summary-progress"><div style="width:{{ progreso }}%"></div></div>
+  <div class="d-flex justify-content-between small mt-2"><span>{{ progreso }}% completado</span><span>{{ completas|length }}/{{ total }}</span></div>
+</section>
+{% if progreso == 100 %}
+<div class="card p-4 mb-4 d-md-flex flex-md-row justify-content-between align-items-md-center gap-3">
+  <div><div class="eyebrow">TODO LISTO</div><h5 class="fw-bold mb-1">Completaste todas las categorías</h5><div class="text-muted small">Al finalizar, tu votación quedará cerrada.</div></div>
+  <form method="post" action="{{ url_for('voter.finalizar') }}" onsubmit="return confirm('Esta acción es definitiva. ¿Deseas finalizar tu votación?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit" class="btn btn-gold">Finalizar votación ✦</button></form>
+</div>
+{% endif %}
+<div class="summary-grid">
+  <section class="summary-card"><div class="eyebrow">COMPLETADAS</div><h4 class="fw-bold mb-3">✓ {{ completas|length }} categorías</h4>{% for item in completas %}<div class="p-3 mb-2 rounded-4 badge-soft-green fw-semibold">✓ {{ item.categoria.nombre }}</div>{% else %}<div class="text-muted">Aún no completaste categorías.</div>{% endfor %}</section>
+  <section class="summary-card"><div class="eyebrow">PENDIENTES</div><h4 class="fw-bold mb-3">✦ {{ pendientes|length }} categorías</h4>{% for item in pendientes %}<div class="p-3 mb-2 rounded-4 badge-soft-gold d-flex justify-content-between"><span>{{ item.categoria.nombre }}</span><a href="{{ url_for('voter.ver_categoria', category_id=item.categoria.id) }}" class="text-decoration-none fw-bold">Votar →</a></div>{% else %}<div class="text-success fw-semibold">No tienes categorías pendientes.</div>{% endfor %}</section>
+</div>
+<div class="mt-4"><a href="{{ url_for('voter.home') }}" class="btn btn-outline-light">← Volver a categorías</a></div>
+{% endblock %}

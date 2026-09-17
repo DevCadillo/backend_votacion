@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Ingresar a votar · Luz del Mundo Awards 2026{% endblock %}
+{% block content %}
+<div class="voter-entry">
+  <div class="voter-entry-shell">
+    <section class="voter-entry-hero">
+      <div class="event-pill">✦ IGLESIA BAUTISTA LOS ANDES</div>
+      <h1>LUZ DEL MUNDO <span>AWARDS 2026</span></h1>
+      <p>Una noche especial para celebrar, participar y reconocer. Ingresa con tu carnet y vive tu recorrido por las categorías del evento.</p>
+      <div class="small opacity-75 mt-4">“Vosotros sois la luz del mundo” · Mateo 5:14</div>
+    </section>
+    <section class="voter-entry-form">
+      <div class="entry-icon">✦</div>
+      <div class="eyebrow">ACCESO DE VOTANTES</div>
+      <h2 class="mt-1 mb-2">Comienza tu votación</h2>
+      <p class="text-muted mb-0">Ingresa tu número de carnet de identidad para continuar.</p>
+      <div class="entry-note">🔒 Tu carnet funciona como identificador único dentro del evento.</div>
+      <form method="post" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label fw-bold">Carnet de identidad</label>
+        <input type="text" name="carnet" class="form-control mb-3" placeholder="Ej. 12345678" value="{{ carnet or '' }}" inputmode="numeric" pattern="[0-9A-Za-z-]+" maxlength="20" required autofocus>
+        <button type="submit" class="btn btn-gold btn-lg w-100">Continuar a votar →</button>
+      </form>
+      <div class="text-center mt-4"><a href="{{ url_for('auth.login') }}" class="login-back small">¿Eres administrador? Ingresar al panel</a></div>
+    </section>
+  </div>
+</div>
+{% endblock %}

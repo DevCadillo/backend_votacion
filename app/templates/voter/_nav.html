@@ -1,0 +1,9 @@
+<nav class="navbar navbar-dark voter-navbar">
+  <div class="container-fluid page-container">
+    <a class="navbar-brand text-truncate" href="{{ url_for('voter.home') }}">LUZ DEL MUNDO AWARDS</a>
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('voter.perfil') }}" class="text-white text-decoration-none small voter-user-name">{{ voter.nombre_completo }}</a>
+      <a href="{{ url_for('voter.salir') }}" class="btn btn-sm btn-outline-light">Salir</a>
+    </div>
+  </div>
+</nav>

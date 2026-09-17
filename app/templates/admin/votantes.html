@@ -1,0 +1,121 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Votantes{% endblock %}
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-0">Votantes (padrón)</h4>
+    <p class="small text-muted mb-0">El <strong>carnet es único</strong>. Para votar, el ciudadano ingresa solamente su carnet. Si no está registrado, se le solicita nombre completo y carnet para crear el registro.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportar">Importar CSV</button>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoVotante">+ Registrar votante</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead class="table-light"><tr><th>Nombre completo</th><th>Carnet</th><th>Inició</th><th>Terminó</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for v in votantes %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold" style="width:32px;height:32px;font-size:12px;">
+                {{ v.nombre_completo.split(' ')[0][0] }}{{ v.nombre_completo.split(' ')[1][0] if v.nombre_completo.split(' ')|length > 1 else '' }}
+              </div>
+              <strong>{{ v.nombre_completo }}</strong>
+            </div>
+          </td>
+          <td><code>{{ v.codigo_padron }}</code></td>
+          <td>{{ 'Sí' if v.iniciado else 'No' }}</td>
+          <td>{{ 'Sí' if v.terminado else 'No' }}</td>
+          <td><span class="badge {{ 'badge-soft-green' if v.estado=='activo' else 'bg-light text-muted' }}">{{ 'Activo' if v.estado=='activo' else 'Inactivo' }}</span></td>
+          <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalEditarVotante{{ v.id }}" title="Editar">✏️</button>
+            <form method="post" action="{{ url_for('admin.toggle_votante', voter_id=v.id) }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-light" title="Cambiar estado">{{ '🚫' if v.estado=='activo' else '✅' }}</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.eliminar_votante', voter_id=v.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar a este votante del padrón?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-light text-danger" title="Eliminar">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No hay votantes registrados en el padrón.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# IMPORTANTE: los modales están fuera de tbody/table para evitar HTML inválido y fallos de Bootstrap #}
+{% for v in votantes %}
+<div class="modal fade" id="modalEditarVotante{{ v.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" action="{{ url_for('admin.editar_votante', voter_id=v.id) }}" class="modal-content">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar votante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        {% if v.receipts|length > 0 %}
+        <div class="alert alert-warning small">Este votante ya tiene votos registrados. Para proteger la integridad electoral, no se permite cambiar su nombre ni carnet.</div>
+        {% endif %}
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Nombre completo</label>
+          <input type="text" name="nombre_completo" class="form-control" value="{{ v.nombre_completo }}" minlength="3" maxlength="180" required {% if v.receipts|length > 0 %}readonly{% endif %}>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold">Carnet</label>
+          <input type="text" name="codigo_padron" class="form-control" value="{{ v.codigo_padron }}" minlength="3" maxlength="40" required {% if v.receipts|length > 0 %}readonly{% endif %}>
+          <div class="form-text">El carnet identifica de forma única al votante.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" {% if v.receipts|length > 0 %}disabled{% endif %}>Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endfor %}
+
+<div class="modal fade" id="modalNuevoVotante" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" action="{{ url_for('admin.nuevo_votante') }}" class="modal-content">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">Registrar votante</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Nombre completo</label>
+          <input type="text" name="nombre_completo" class="form-control" placeholder="Ej. Juan Pérez Alcón" minlength="3" maxlength="180" required>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold">Carnet</label>
+          <input type="text" name="codigo_padron" class="form-control" placeholder="Ej. 12345678" minlength="3" maxlength="40" required>
+          <div class="form-text">No puede repetirse.</div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="btn btn-primary">Registrar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" action="{{ url_for('admin.importar_votantes') }}" enctype="multipart/form-data" class="modal-content">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header"><h5 class="modal-title">Importar votantes (CSV)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="small text-muted">Columnas obligatorias: <code>nombre_completo,codigo_padron</code>. El nombre y el carnet deben ser únicos.</p>
+        <input type="file" name="archivo_csv" accept=".csv,text/csv" class="form-control" required>
+      </div>
+      <div class="modal-footer"><button type="submit" class="btn btn-primary">Importar</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

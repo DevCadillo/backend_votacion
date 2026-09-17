@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Sin elección activa{% endblock %}
+{% block nav %}{% include "voter/_nav.html" %}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h4 class="fw-bold">No hay una elección activa en este momento</h4>
+  <p class="text-muted">Vuelve a intentarlo cuando la votación esté habilitada.</p>
+</div>
+{% endblock %}

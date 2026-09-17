@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Mi perfil{% endblock %}
+{% block nav %}{% include "voter/_nav.html" %}{% endblock %}
+{% block content %}
+<a href="{{ url_for('voter.home') }}" class="small text-muted d-inline-block mb-3">&larr; Volver</a>
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card p-4 text-center">
+      <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold mx-auto mb-3"
+           style="width:72px;height:72px;font-size:22px;">
+        {{ voter.nombre_completo.split(' ')[0][0] }}{{ voter.nombre_completo.split(' ')[1][0] if voter.nombre_completo.split(' ')|length > 1 else '' }}
+      </div>
+      <h5 class="fw-bold mb-0">{{ voter.nombre_completo }}</h5>
+      {% if voter.codigo_padron %}<div class="text-muted small">Código de padrón: {{ voter.codigo_padron }}</div>{% endif %}
+      <span class="badge badge-soft-green mt-3">Identificado para esta sesión de votación</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Administración — Luz del Mundo Awards{% endblock %}
+{% block content %}
+<div class="login-page">
+  <div class="login-shell">
+    <section class="login-hero">
+      <div class="event-pill">✦ EVENTO JUVENIL 2026</div>
+      <h1 class="login-title">LUZ DEL<br><span>MUNDO</span><br>AWARDS</h1>
+      <p class="login-verse mb-0">Una experiencia para celebrar, participar y reconocer con alegría. “Vosotros sois la luz del mundo”.</p>
+      <div class="small mt-4 opacity-75">Mateo 5:14 · Sistema oficial de votación</div>
+    </section>
+    <section class="login-form-side">
+      <div class="login-icon">✦</div>
+      <div class="text-uppercase small fw-bold mb-2" style="color:#7c4dff;letter-spacing:.09em">Administración</div>
+      <h2 class="mb-2">Bienvenido</h2>
+      <p class="text-muted mb-4">Ingresa tus credenciales para gestionar el evento.</p>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label">Usuario o correo</label>
+          <input type="text" name="usuario" class="form-control" placeholder="Escribe tu usuario" required autofocus autocomplete="username">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <input type="password" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div class="text-end mb-4"><a href="{{ url_for('auth.recuperar_password') }}" class="small login-back">¿Olvidaste tu contraseña?</a></div>
+        <button type="submit" class="btn btn-primary w-100">Ingresar al panel →</button>
+      </form>
+      <div class="text-center mt-4"><a href="{{ url_for('voter.identificarse') }}" class="small login-back">← Ir a la votación</a></div>
+    </section>
+  </div>
+</div>
+{% endblock %}

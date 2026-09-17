@@ -1,0 +1,94 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Candidatos{% endblock %}
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">Candidatos</h4>
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoCandidato">+ Nuevo candidato</button>
+</div>
+<div class="card"><div class="table-responsive"><table class="table mb-0 align-middle">
+<thead class="table-light"><tr><th>Foto</th><th>Candidato</th><th>Categoría</th><th>Agrupación</th><th>Estado</th><th></th></tr></thead>
+<tbody>
+{% for c in candidatos %}<tr>
+<td>{% if c.foto_url %}<img src="{{ c.foto_url }}" alt="{{ c.nombre }}" class="rounded-circle" style="width:44px;height:44px;object-fit:cover;">{% else %}<div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold" style="width:44px;height:44px;">{{ c.iniciales }}</div>{% endif %}</td>
+<td><strong>{{ c.nombre }}</strong><div class="small text-muted">Lista {{ c.numero_lista or '—' }}</div></td>
+<td>{% for link in c.category_links %}<span class="badge bg-light text-dark border me-1 mb-1">{{ link.category.nombre }}</span>{% else %}—{% endfor %}</td><td>{{ c.agrupacion or '—' }}</td>
+<td><span class="badge {{ 'badge-soft-green' if c.estado=='activo' else 'bg-light text-muted' }}">{{ 'Activo' if c.estado=='activo' else 'Inactivo' }}</span></td>
+<td class="text-end"><button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalEditarCandidato{{ c.id }}">✏️</button>
+<form method="post" action="{{ url_for('admin.toggle_candidato', candidate_id=c.id) }}" class="d-inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm {{ 'btn-outline-danger' if c.estado=='activo' else 'btn-outline-success' }}">{{ 'Desactivar' if c.estado=='activo' else 'Activar' }}</button></form>
+<form method="post" action="{{ url_for('admin.eliminar_candidato', candidate_id=c.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar este candidato?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-light text-danger">🗑️</button></form></td>
+</tr>{% else %}<tr><td colspan="6" class="text-center text-muted py-4">No hay candidatos registrados.</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+{% for c in candidatos %}
+<div class="modal fade" id="modalEditarCandidato{{ c.id }}" tabindex="-1"><div class="modal-dialog"><form method="post" action="{{ url_for('admin.editar_candidato', candidate_id=c.id) }}" enctype="multipart/form-data" class="modal-content">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="modal-header"><h5 class="modal-title">Editar candidato</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<div class="mb-3"><label class="form-label small fw-semibold">Fotografía</label><input type="file" name="foto" class="form-control" accept="image/png,image/jpeg,image/webp"></div>
+{% if c.id in ids_con_votos %}
+<div class="alert alert-warning small">Este candidato ya tiene votos registrados. Para proteger la integridad electoral, no se puede cambiar su nombre ni número de lista, y no se puede quitar una categoría en la que ya tiene votos (marcada con 🔒 abajo). Sí puedes agregar categorías nuevas, y actualizar foto, agrupación o propuesta.</div>
+{% endif %}
+<div class="mb-3"><label class="form-label small fw-semibold">Nombre completo</label><input name="nombre" class="form-control" value="{{ c.nombre }}" required {% if c.id in ids_con_votos %}readonly{% endif %}></div>
+<div class="row g-2 mb-3"><div class="col-4"><label class="form-label small fw-semibold">N.º lista</label><input name="numero_lista" class="form-control" value="{{ c.numero_lista or '' }}" {% if c.id in ids_con_votos %}readonly{% endif %}></div><div class="col-8"><label class="form-label small fw-semibold">Agrupación</label><input name="agrupacion" class="form-control" value="{{ c.agrupacion or '' }}"></div></div>
+<div class="mb-3">
+  <div class="d-flex justify-content-between align-items-center">
+    <label class="form-label small fw-semibold mb-0">Categorías</label>
+    <div class="form-check form-check-inline small mb-0">
+      <input class="form-check-input marcar-todas" type="checkbox" id="marcarTodasEditar{{ c.id }}" checked
+             onclick="document.querySelectorAll('.cat-editar-{{ c.id }}:not(:disabled)').forEach(cb=>cb.checked=this.checked)">
+      <label class="form-check-label" for="marcarTodasEditar{{ c.id }}">Todas</label>
+    </div>
+  </div>
+  {% set candidato_cats = c.category_links|map(attribute='category_id')|list %}
+  {% set cats_con_voto = votos_por_candidato_categoria.get(c.id, []) %}
+  <div class="row row-cols-2 g-1 border rounded p-2">
+  {% for cat in categorias %}
+    {% set bloqueada = cat.id in cats_con_voto %}
+    <div class="col">
+      <div class="form-check">
+        <input class="form-check-input cat-editar-{{ c.id }}" type="checkbox" name="categoria_ids"
+               value="{{ cat.id }}" id="editar{{ c.id }}_cat{{ cat.id }}"
+               {% if cat.id in candidato_cats %}checked{% endif %}
+               {% if bloqueada %}disabled{% endif %}>
+        <label class="form-check-label small" for="editar{{ c.id }}_cat{{ cat.id }}">{{ cat.nombre }}{% if bloqueada %} 🔒{% endif %}</label>
+      </div>
+      {% if bloqueada %}<input type="hidden" name="categoria_ids" value="{{ cat.id }}">{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+  {% if cats_con_voto %}<div class="form-text">🔒 = este candidato ya tiene votos en esa categoría; no se puede quitar.</div>{% endif %}
+</div>
+<div><label class="form-label small fw-semibold">Propuesta</label><textarea name="propuesta" class="form-control" rows="3">{{ c.propuesta or '' }}</textarea></div>
+</div><div class="modal-footer"><button type="submit" class="btn btn-primary">Guardar cambios</button></div></form></div></div>
+{% endfor %}
+
+<div class="modal fade" id="modalNuevoCandidato" tabindex="-1"><div class="modal-dialog"><form method="post" action="{{ url_for('admin.nuevo_candidato') }}" enctype="multipart/form-data" class="modal-content">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="modal-header"><h5 class="modal-title">Nuevo candidato</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body"><div class="mb-3"><label class="form-label small fw-semibold">Fotografía</label><input type="file" name="foto" class="form-control" accept="image/png,image/jpeg,image/webp"></div>
+<div class="mb-3"><label class="form-label small fw-semibold">Nombre completo</label><input name="nombre" class="form-control" required></div>
+<div class="row g-2 mb-3"><div class="col-4"><label class="form-label small fw-semibold">N.º lista</label><input name="numero_lista" class="form-control"></div><div class="col-8"><label class="form-label small fw-semibold">Agrupación</label><input name="agrupacion" class="form-control"></div></div>
+<div class="mb-3">
+  <div class="d-flex justify-content-between align-items-center">
+    <label class="form-label small fw-semibold mb-0">Categorías</label>
+    <div class="form-check form-check-inline small mb-0">
+      <input class="form-check-input" type="checkbox" id="marcarTodasNuevo" checked
+             onclick="document.querySelectorAll('.cat-nuevo').forEach(cb=>cb.checked=this.checked)">
+      <label class="form-check-label" for="marcarTodasNuevo">Todas</label>
+    </div>
+  </div>
+  <div class="row row-cols-2 g-1 border rounded p-2">
+  {% for cat in categorias %}
+    <div class="col">
+      <div class="form-check">
+        <input class="form-check-input cat-nuevo" type="checkbox" name="categoria_ids" value="{{ cat.id }}" checked id="nuevo_cat{{ cat.id }}">
+        <label class="form-check-label small" for="nuevo_cat{{ cat.id }}">{{ cat.nombre }}</label>
+      </div>
+    </div>
+  {% else %}
+    <div class="col-12 text-muted small">No hay categorías creadas todavía. Crea alguna primero en "Categorías".</div>
+  {% endfor %}
+  </div>
+  <div class="form-text">Por defecto el candidato queda inscrito en todas las categorías. Desmarca las que no correspondan (por ejemplo, si Miss/Mister se dividen por sexo).</div>
+</div>
+<div><label class="form-label small fw-semibold">Propuesta</label><textarea name="propuesta" class="form-control" rows="2"></textarea></div></div>
+<div class="modal-footer"><button type="submit" class="btn btn-primary">Guardar candidato</button></div></form></div></div>
+{% endblock %}

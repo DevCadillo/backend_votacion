@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ category.nombre }} · Luz del Mundo Awards{% endblock %}
+{% block nav %}{% include "voter/_nav.html" %}{% endblock %}
+{% block content %}
+<section class="vote-stage-head">
+  <div class="stage-orb orb-one"></div><div class="stage-orb orb-two"></div>
+  <a href="{{ url_for('voter.home') }}" class="back-link">← Categorías</a>
+  <div class="award-kicker">✦ LUZ DEL MUNDO AWARDS 2026 ✦</div>
+  <h1>{{ category.nombre }}</h1>
+  <p>Elige {{ 'una opción' if category.max_selecciones == 1 else 'hasta ' ~ category.max_selecciones ~ ' opciones' }}. Toca una tarjeta para seleccionarla.</p>
+  <div class="selection-counter"><span id="selectedCount">0</span> / {{ category.max_selecciones }} seleccionados</div>
+</section>
+<form method="post" action="{{ url_for('voter.revisar_voto', category_id=category.id) }}" id="voteForm">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="candidate-grid">
+{% for c in candidatos %}
+<label class="award-candidate">
+  <input type="checkbox" class="candidato-selector" name="candidato_id" value="{{c.id}}">
+  <div class="candidate-photo">
+    {% if c.foto_url %}<img src="{{c.foto_url}}" alt="Fotografía de {{c.nombre}}">{% else %}<div class="candidate-initials">{{c.iniciales}}</div>{% endif %}
+    <span class="pick-check">✓</span>
+    {% if c.numero_lista %}<span class="candidate-number">#{{c.numero_lista}}</span>{% endif %}
+  </div>
+  <div class="candidate-info">
+    <div class="nominee-label">NOMINADO/A</div><h3>{{c.nombre}}</h3>
+    {% if c.agrupacion %}<div class="candidate-group">{{c.agrupacion}}</div>{% endif %}
+    {% if c.propuesta %}<p>{{c.propuesta}}</p>{% endif %}
+    <div class="tap-select"><span class="select-empty">○</span><span class="select-done">✓</span> <b class="select-text">Seleccionar</b></div>
+  </div>
+</label>
+{% endfor %}
+</div>
+<div class="vote-action-dock"><div><strong>{{category.nombre}}</strong><small id="dockHint">Selecciona tu opción para continuar</small></div><button class="btn-vote-next" type="submit">Revisar mi elección <span>→</span></button></div>
+</form>
+<script>
+const max={{category.max_selecciones|int}}, boxes=[...document.querySelectorAll('.candidato-selector')], count=document.getElementById('selectedCount'), hint=document.getElementById('dockHint');
+function sync(){let n=boxes.filter(x=>x.checked).length;count.textContent=n;hint.textContent=n?`${n} selección${n>1?'es':''} lista${n>1?'s':''}`:'Selecciona tu opción para continuar';}
+boxes.forEach(box=>box.addEventListener('change',()=>{if(boxes.filter(x=>x.checked).length>max){box.checked=false;box.closest('.award-candidate').classList.add('shake');setTimeout(()=>box.closest('.award-candidate').classList.remove('shake'),350);}sync();}));
+document.getElementById('voteForm').addEventListener('submit',e=>{if(!boxes.some(x=>x.checked)){e.preventDefault();hint.textContent='Debes seleccionar al menos una opción';document.querySelector('.candidate-grid').classList.add('attention');setTimeout(()=>document.querySelector('.candidate-grid').classList.remove('attention'),500);}});sync();
+</script>
+{% endblock %}
