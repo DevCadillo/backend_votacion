@@ -1,13 +1,625 @@
 {% extends "admin/_layout.html" %}
+
 {% block title %}Administradores{% endblock %}
+
 {% block admin_content %}
-<div class="admin-page-head"><div><span class="eyebrow">SEGURIDAD Y ACCESOS</span><h4 class="mb-1">Administradores</h4><p class="text-muted mb-0">Crea cuentas y define exactamente qué módulos puede administrar cada persona.</p></div><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoAdmin">＋ Nuevo administrador</button></div>
-<div class="row g-3 mt-1">
-{% for u in usuarios %}<div class="col-xl-6"><div class="admin-user-card"><div class="d-flex align-items-center gap-3"><div class="admin-avatar">{{ u.nombre[:1]|upper }}</div><div class="flex-grow-1"><div class="d-flex flex-wrap align-items-center gap-2"><strong>{{ u.nombre }}</strong><span class="badge {{ 'badge-soft-green' if u.estado=='activo' else 'bg-light text-muted' }}">{{ u.estado|capitalize }}</span>{% if u.admin_profile and u.admin_profile.nivel=='superadmin' %}<span class="badge badge-soft-gold">Superadmin</span>{% endif %}</div><div class="small text-muted">@{{ u.usuario }} · {{ u.correo }}</div></div></div>
-<div class="permission-chips mt-3">{% if u.admin_profile %}{% for key,label in [('elecciones','Elecciones'),('categorias','Categorías'),('candidatos','Participantes'),('votantes','Votantes'),('resultados','Resultados'),('usuarios','Usuarios')] %}{% if u.admin_profile.nivel=='superadmin' or u.admin_profile|attr('puede_'+key) %}<span>✓ {{ label }}</span>{% endif %}{% endfor %}{% endif %}</div>
-<div class="d-flex gap-2 mt-3"><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#edit{{u.id}}">Editar y permisos</button>{% if u.id != current_user.id %}<form method="post" action="{{url_for('admin.toggle_usuario',user_id=u.id)}}"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><button class="btn btn-sm {{ 'btn-outline-danger' if u.estado=='activo' else 'btn-outline-success' }}">{{ 'Desactivar' if u.estado=='activo' else 'Activar' }}</button></form>{% endif %}</div></div></div>
-<div class="modal fade" id="edit{{u.id}}"><div class="modal-dialog modal-lg"><form method="post" action="{{url_for('admin.editar_usuario',user_id=u.id)}}" class="modal-content"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><div class="modal-header"><h5>Editar administrador</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label>Nombre</label><input name="nombre" class="form-control" value="{{u.nombre}}" required></div><div class="col-md-6"><label>Correo</label><input name="correo" type="email" class="form-control" value="{{u.correo}}" required></div><div class="col-md-6"><label>Nivel</label><select name="nivel" class="form-select" {% if u.id==current_user.id %}disabled{% endif %}><option value="admin" {% if u.admin_profile and u.admin_profile.nivel=='admin' %}selected{% endif %}>Administrador</option><option value="superadmin" {% if u.admin_profile and u.admin_profile.nivel=='superadmin' %}selected{% endif %}>Superadministrador</option></select></div><div class="col-md-6"><label>Nueva contraseña (opcional)</label><input name="password" type="password" class="form-control" minlength="8"></div></div><hr><h6>Permisos</h6><div class="row row-cols-2 row-cols-md-3 g-2">{% for key,label in [('elecciones','Elecciones'),('categorias','Categorías'),('candidatos','Participantes'),('votantes','Votantes'),('resultados','Resultados'),('usuarios','Administradores')] %}<div class="col"><label class="permission-box"><input type="checkbox" name="puede_{{key}}" {% if u.admin_profile and u.admin_profile|attr('puede_'+key) %}checked{% endif %}> <span>{{label}}</span></label></div>{% endfor %}</div>{% if u.id != current_user.id %}<input type="hidden" name="estado" value="{{u.estado}}">{% endif %}</div><div class="modal-footer"><button class="btn btn-primary">Guardar cambios</button></div></form></div></div>
-{% endfor %}
+
+<div class="admin-page-head">
+    <div>
+        <span class="eyebrow">SEGURIDAD Y ACCESOS</span>
+        <h4 class="mb-1">Administradores</h4>
+        <p class="text-muted mb-0">
+            Crea administradores y controla los módulos a los que puede acceder cada cuenta.
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#nuevoAdmin">
+        ＋ Nuevo administrador
+    </button>
 </div>
-<div class="modal fade" id="nuevoAdmin"><div class="modal-dialog modal-lg"><form method="post" action="{{url_for('admin.nuevo_usuario')}}" class="modal-content"><input type="hidden" name="csrf_token" value="{{csrf_token()}}"><div class="modal-header"><h5>Nuevo administrador</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-6"><label>Nombre completo</label><input name="nombre" class="form-control" required></div><div class="col-md-6"><label>Correo</label><input name="correo" type="email" class="form-control" required></div><div class="col-md-6"><label>Usuario</label><input name="usuario" class="form-control" required></div><div class="col-md-6"><label>Contraseña</label><input name="password" type="password" minlength="8" class="form-control" required></div><div class="col-md-6"><label>Nivel</label><select name="nivel" class="form-select"><option value="admin">Administrador</option><option value="superadmin">Superadministrador</option></select></div></div><hr><h6>Permisos iniciales</h6><div class="row row-cols-2 row-cols-md-3 g-2">{% for key,label in [('elecciones','Elecciones'),('categorias','Categorías'),('candidatos','Participantes'),('votantes','Votantes'),('resultados','Resultados'),('usuarios','Administradores')] %}<div class="col"><label class="permission-box"><input type="checkbox" name="puede_{{key}}" checked> <span>{{label}}</span></label></div>{% endfor %}</div></div><div class="modal-footer"><button class="btn btn-primary">Crear administrador</button></div></form></div></div></div>
+
+
+<div class="row g-3 mt-1">
+
+{% for u in usuarios %}
+
+    {% set perfil = u.admin_profile %}
+
+    <div class="col-xl-6">
+        <div class="admin-user-card">
+
+            <div class="d-flex align-items-center gap-3">
+
+                <div class="admin-avatar">
+                    {{ u.nombre[:1]|upper }}
+                </div>
+
+                <div class="flex-grow-1">
+
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+
+                        <strong>{{ u.nombre }}</strong>
+
+                        <span class="badge
+                            {{ 'badge-soft-green'
+                            if u.estado == 'activo'
+                            else 'bg-light text-muted' }}">
+                            {{ u.estado|capitalize }}
+                        </span>
+
+                        {% if perfil and perfil.nivel == 'superadmin' %}
+                            <span class="badge badge-soft-gold">
+                                Superadministrador
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-dark">
+                                Administrador
+                            </span>
+                        {% endif %}
+
+                        {% if u.id == current_user.id %}
+                            <span class="badge bg-primary">
+                                Tu cuenta
+                            </span>
+                        {% endif %}
+
+                    </div>
+
+                    <div class="small text-muted">
+                        @{{ u.usuario }} · {{ u.correo }}
+                    </div>
+
+                </div>
+            </div>
+
+
+            <div class="permission-chips mt-3">
+
+                {% if perfil %}
+
+                    {% for key, label in [
+                        ('elecciones','Elecciones'),
+                        ('categorias','Categorías'),
+                        ('candidatos','Participantes'),
+                        ('votantes','Votantes'),
+                        ('resultados','Resultados'),
+                        ('usuarios','Administradores')
+                    ] %}
+
+                        {% if perfil.nivel == 'superadmin'
+                              or perfil|attr('puede_' + key) %}
+                            <span>✓ {{ label }}</span>
+                        {% endif %}
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <span class="text-danger">
+                        Sin perfil administrativo
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="d-flex flex-wrap gap-2 mt-3">
+
+                {% if perfil %}
+
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#edit{{ u.id }}">
+                        Editar y permisos
+                    </button>
+
+                {% endif %}
+
+
+                {% if u.id != current_user.id %}
+
+                    <form
+                        method="post"
+                        action="{{ url_for('admin.toggle_usuario', user_id=u.id) }}">
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}">
+
+                        <button
+                            type="submit"
+                            class="btn btn-sm
+                            {{ 'btn-outline-danger'
+                            if u.estado == 'activo'
+                            else 'btn-outline-success' }}">
+
+                            {{ 'Desactivar'
+                               if u.estado == 'activo'
+                               else 'Activar' }}
+
+                        </button>
+
+                    </form>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+
+
+    {% if perfil %}
+
+    <!-- MODAL EDITAR ADMINISTRADOR -->
+
+    <div
+        class="modal fade"
+        id="edit{{ u.id }}"
+        tabindex="-1"
+        aria-hidden="true">
+
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+
+            <form
+                method="post"
+                action="{{ url_for('admin.editar_usuario', user_id=u.id) }}"
+                class="modal-content">
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}">
+
+
+                <div class="modal-header">
+
+                    <div>
+                        <h5 class="modal-title mb-0">
+                            Editar administrador
+                        </h5>
+
+                        <small class="text-muted">
+                            @{{ u.usuario }}
+                        </small>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar">
+                    </button>
+
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                Nombre
+                            </label>
+
+                            <input
+                                name="nombre"
+                                class="form-control"
+                                value="{{ u.nombre }}"
+                                required>
+                        </div>
+
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                Correo
+                            </label>
+
+                            <input
+                                name="correo"
+                                type="email"
+                                class="form-control"
+                                value="{{ u.correo }}"
+                                required>
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Nivel
+                            </label>
+
+                            {% if u.id == current_user.id %}
+
+                                <!--
+                                El superadmin no puede quitarse accidentalmente
+                                su propio nivel.
+                                -->
+
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    value="Superadministrador"
+                                    readonly>
+
+                                <input
+                                    type="hidden"
+                                    name="nivel"
+                                    value="{{ perfil.nivel }}">
+
+                            {% else %}
+
+                                <select
+                                    name="nivel"
+                                    class="form-select">
+
+                                    <option
+                                        value="admin"
+                                        {% if perfil.nivel == 'admin' %}
+                                            selected
+                                        {% endif %}>
+                                        Administrador
+                                    </option>
+
+                                    <option
+                                        value="superadmin"
+                                        {% if perfil.nivel == 'superadmin' %}
+                                            selected
+                                        {% endif %}>
+                                        Superadministrador
+                                    </option>
+
+                                </select>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Nueva contraseña
+                            </label>
+
+                            <input
+                                name="password"
+                                type="password"
+                                class="form-control"
+                                minlength="8"
+                                autocomplete="new-password"
+                                placeholder="Dejar vacío para conservar">
+
+                        </div>
+
+                    </div>
+
+
+                    <hr class="my-4">
+
+
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-3">
+
+                        <div>
+                            <h6 class="mb-0">
+                                Permisos
+                            </h6>
+
+                            <small class="text-muted">
+                                Selecciona los módulos disponibles.
+                            </small>
+                        </div>
+
+                        {% if perfil.nivel == 'superadmin' %}
+                            <span class="badge badge-soft-gold">
+                                Acceso total
+                            </span>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="row row-cols-1 row-cols-md-2
+                                row-cols-lg-3 g-2">
+
+                        {% for key, label in [
+                            ('elecciones','Elecciones'),
+                            ('categorias','Categorías'),
+                            ('candidatos','Participantes'),
+                            ('votantes','Votantes'),
+                            ('resultados','Resultados'),
+                            ('usuarios','Administradores')
+                        ] %}
+
+                            <div class="col">
+
+                                <label class="permission-box w-100">
+
+                                    <input
+                                        type="checkbox"
+                                        name="puede_{{ key }}"
+
+                                        {% if perfil.nivel == 'superadmin'
+                                              or perfil|attr('puede_' + key) %}
+                                            checked
+                                        {% endif %}>
+
+                                    <span>{{ label }}</span>
+
+                                </label>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    {% if u.id != current_user.id %}
+
+                        <input
+                            type="hidden"
+                            name="estado"
+                            value="{{ u.estado }}">
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary">
+                        Guardar cambios
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+{% endfor %}
+
+</div>
+
+
+
+<!-- ===================================================== -->
+<!-- NUEVO ADMINISTRADOR                                   -->
+<!-- ===================================================== -->
+
+<div
+    class="modal fade"
+    id="nuevoAdmin"
+    tabindex="-1"
+    aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <form
+            method="post"
+            action="{{ url_for('admin.nuevo_usuario') }}"
+            class="modal-content">
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}">
+
+
+            <div class="modal-header">
+
+                <div>
+                    <h5 class="modal-title mb-0">
+                        Nuevo administrador
+                    </h5>
+
+                    <small class="text-muted">
+                        Crea una nueva cuenta administrativa.
+                    </small>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Cerrar">
+                </button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <div class="row g-3">
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Nombre completo
+                        </label>
+
+                        <input
+                            name="nombre"
+                            class="form-control"
+                            placeholder="Ej. Juan Pérez"
+                            required>
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Correo
+                        </label>
+
+                        <input
+                            name="correo"
+                            type="email"
+                            class="form-control"
+                            placeholder="correo@ejemplo.com"
+                            required>
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Usuario
+                        </label>
+
+                        <input
+                            name="usuario"
+                            class="form-control"
+                            placeholder="juanperez"
+                            autocomplete="off"
+                            required>
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Contraseña
+                        </label>
+
+                        <input
+                            name="password"
+                            type="password"
+                            minlength="8"
+                            class="form-control"
+                            autocomplete="new-password"
+                            placeholder="Mínimo 8 caracteres"
+                            required>
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+                            Nivel
+                        </label>
+
+                        <select
+                            name="nivel"
+                            id="nivelNuevoAdmin"
+                            class="form-select">
+
+                            <option value="admin" selected>
+                                Administrador
+                            </option>
+
+                            <option value="superadmin">
+                                Superadministrador
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <hr class="my-4">
+
+
+                <h6 class="mb-1">
+                    Permisos iniciales
+                </h6>
+
+                <p class="small text-muted">
+                    Puedes elegir exactamente qué módulos podrá administrar.
+                </p>
+
+
+                <div class="row row-cols-1 row-cols-md-2
+                            row-cols-lg-3 g-2">
+
+                    {% for key, label in [
+                        ('elecciones','Elecciones'),
+                        ('categorias','Categorías'),
+                        ('candidatos','Participantes'),
+                        ('votantes','Votantes'),
+                        ('resultados','Resultados'),
+                        ('usuarios','Administradores')
+                    ] %}
+
+                        <div class="col">
+
+                            <label class="permission-box w-100">
+
+                                <input
+                                    type="checkbox"
+                                    name="puede_{{ key }}"
+                                    checked>
+
+                                <span>
+                                    {{ label }}
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary">
+                    Crear administrador
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
 {% endblock %}
