@@ -26,7 +26,20 @@
   <div class="mb-2">
     <div class="d-flex justify-content-between small mb-1">
       <span class="{{ 'fw-bold' if loop.index == 1 }}">{{ loop.index }}. {{ fila.nombre }}</span>
-      <span class="text-muted">{{ fila.votos }} votos — {{ fila.pct }}%</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted">{{ fila.votos }} votos — {{ fila.pct }}%</span>
+        {% if current_user.admin_profile and current_user.admin_profile.nivel == 'superadmin' and fila.votos > 0 %}
+        <form method="POST"
+              action="{{ url_for('admin.resetear_votos_candidato', category_id=bloque.categoria.id, candidate_id=fila.candidate_id) }}"
+              class="d-inline"
+              onsubmit="return confirm('¿Resetear SOLO los votos de {{ fila.nombre|e }} en la categoría {{ bloque.categoria.nombre|e }}? Los demás participantes no serán afectados.');">
+          <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                  title="Resetear únicamente los votos de este participante">
+            ↺ Resetear
+          </button>
+        </form>
+        {% endif %}
+      </div>
     </div>
     <div class="progress" style="height:8px;"><div class="progress-bar {{ 'bg-warning' if loop.index==1 else 'bg-secondary' }}" style="width:{{ fila.pct }}%;"></div></div>
   </div>

@@ -9,6 +9,20 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
   {% block extra_head %}{% endblock %}
 </head>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Mover todos los modales directamente al body.
+    // Evita problemas de z-index causados por contenedores padres.
+    document.querySelectorAll('.modal').forEach(function (modal) {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+
+});
+</script>
 <body>
   {% block nav %}{% endblock %}
   <main class="container-fluid page-container py-3 py-md-4">

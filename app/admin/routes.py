@@ -807,6 +807,77 @@ def api_stats():
     })
 
 
+
+# --------------------------------------------------------- RESETEO DE VOTACIÓN
+@admin_bp.route("/resultados/resetear-votos", methods=["POST"])
+@login_required
+@admin_required
+@superadmin_required
+def resetear_votos():
+    """Borra votos y comprobantes de la elección indicada.
+    Solo puede ejecutarlo un superadministrador.
+    No elimina votantes, candidatos, categorías ni la elección.
+    """
+    election_id = request.form.get("election_id", type=int)
+    if not election_id:
+        flash("No se indicó una elección válida para resetear.", "danger")
+        return redirect(url_for("admin.resultados"))
+
+    election = Election.query.get_or_404(election_id)
+
+    # Confirmación adicional enviada por el formulario.
+    if request.form.get("confirmar") != "RESET":
+        flash("Debes confirmar el reseteo de votos.", "danger")
+        return redirect(url_for("admin.resultados"))
+
+    try:
+        total_votos = Vote.query.filter_by(election_id=election.id).count()
+        total_recibos = VoteReceipt.query.filter_by(election_id=election.id).count()
+
+        # Primero comprobantes/progreso y después votos.
+        # No se toca el padrón de votantes.
+        VoteReceipt.query.filter_by(election_id=election.id).delete(
+            synchronize_session=False
+        )
+        Vote.query.filter_by(election_id=election.id).delete(
+            synchronize_session=False
+        )
+
+        AuditLog.log(
+            "resetear_votacion",
+            user_id=current_user.id,
+            entidad="elections",
+            entidad_id=election.id,
+            detalle=(
+                f"Elección: {election.nombre}; "
+                f"votos eliminados: {total_votos}; "
+                f"comprobantes eliminados: {total_recibos}"
+            ),
+            ip=request.remote_addr,
+        )
+
+        db.session.commit()
+
+        flash(
+            f"Votación reseteada correctamente. "
+            f"Se eliminaron {total_votos} voto(s) y "
+            f"{total_recibos} comprobante(s). "
+            f"Los votantes pueden volver a votar.",
+            "success",
+        )
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Error al resetear los votos de la elección %s", election.id
+        )
+        flash(
+            "No se pudo resetear la votación. No se realizó ningún cambio.",
+            "danger",
+        )
+
+    return redirect(url_for("admin.resultados"))
+
+
 # --------------------------------------------------------------- ADMINISTRADORES
 @admin_bp.route("/usuarios")
 @login_required
