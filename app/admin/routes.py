@@ -730,7 +730,7 @@ def resultados():
             .order_by(db.func.count(Vote.id).desc(), Candidate.nombre.asc())
             .all()
         )
-        total_votos = sum(v for _, v in conteo)
+        total_votos = sum(votos for _, _, votos in conteo)
         filas = [
             {
                 "candidate_id": candidate_id,
