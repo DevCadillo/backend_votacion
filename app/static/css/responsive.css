@@ -75,3 +75,64 @@ body:after{height:100vh!important;opacity:.20!important;background:radial-gradie
 /* ===== Acceso del votante / resumen ===== */
 .voter-entry{min-height:calc(100vh - 2rem);display:grid;place-items:center;padding:26px 0}.voter-entry-shell{width:min(1050px,100%);display:grid;grid-template-columns:1.08fr .92fr;border-radius:30px;overflow:hidden;background:#fff;box-shadow:0 25px 70px rgba(18,5,54,.30);border:1px solid rgba(255,255,255,.25)}.voter-entry-hero{position:relative;isolation:isolate;padding:52px;color:#fff;background:linear-gradient(145deg,#220b54,#6429c9 48%,#087fc2);overflow:hidden}.voter-entry-hero:after{content:'✦';position:absolute;z-index:-1;right:-10px;bottom:-75px;font-size:260px;color:rgba(255,255,255,.07);transform:rotate(15deg)}.voter-entry-hero h1{font-size:clamp(2.5rem,6vw,4.8rem);font-weight:1000;line-height:.88;letter-spacing:-.055em;margin:24px 0 18px}.voter-entry-hero h1 span{display:block;color:#ffe071}.voter-entry-hero p{max-width:480px;color:rgba(255,255,255,.8);line-height:1.7}.voter-entry-form{padding:48px;display:flex;flex-direction:column;justify-content:center}.voter-entry-form h2{font-weight:950;letter-spacing:-.035em}.entry-icon{width:62px;height:62px;border-radius:20px;display:grid;place-items:center;background:linear-gradient(135deg,#efe7ff,#e7f7ff);font-size:28px;margin-bottom:20px}.entry-note{padding:13px 15px;border-radius:14px;background:#f5f1ff;color:#5f3ba4;font-size:.86rem;margin:18px 0}.voter-entry-form .form-control{min-height:56px;font-size:1.1rem}.voter-entry-form .btn{min-height:54px}.summary-hero{position:relative;overflow:hidden;border-radius:28px;padding:34px 38px;margin-bottom:24px;color:#fff;background:linear-gradient(135deg,#24104f,#6330c9 55%,#0780bd);box-shadow:0 20px 55px rgba(24,7,66,.28)}.summary-hero h1{font-weight:1000;letter-spacing:-.04em}.summary-progress{height:12px;background:rgba(255,255,255,.18);border-radius:999px;overflow:hidden}.summary-progress>div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#ffd85e,#fff1a3)}.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.summary-card{background:#fff;border-radius:22px;padding:22px;box-shadow:0 12px 34px rgba(31,13,72,.12)}
 @media(max-width:767px){.voter-entry-shell{grid-template-columns:1fr;border-radius:24px}.voter-entry-hero{padding:34px 26px}.voter-entry-hero h1{font-size:2.7rem}.voter-entry-form{padding:32px 25px}.summary-grid{grid-template-columns:1fr}}
+
+
+
+/* ============================================================
+   FIX GLOBAL DE MODALES - LUZ DEL MUNDO AWARDS
+   La capa oscura debe quedar DETRAS del formulario
+   ============================================================ */
+
+/* Fondo oscuro */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+/* Modal completo */
+.modal {
+    z-index: 1055 !important;
+}
+
+/* Cuando está abierto */
+.modal.show {
+    z-index: 1055 !important;
+    pointer-events: auto !important;
+}
+
+/* Ventana del formulario */
+.modal-dialog {
+    position: relative !important;
+    z-index: 1056 !important;
+    pointer-events: auto !important;
+}
+
+/* Contenido */
+.modal-content {
+    position: relative !important;
+    z-index: 1057 !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+/* Todos los controles deben poder recibir clics */
+.modal-content input,
+.modal-content select,
+.modal-content textarea,
+.modal-content button,
+.modal-content label,
+.modal-content .btn,
+.modal-content a {
+    pointer-events: auto !important;
+}
+
+/* Evita que decoraciones del diseño bloqueen formularios */
+body::before,
+body::after,
+.admin-shell::before,
+.admin-shell::after,
+.admin-main::before,
+.admin-main::after,
+.admin-content::before,
+.admin-content::after {
+    pointer-events: none !important;
+}
