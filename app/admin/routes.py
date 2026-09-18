@@ -722,7 +722,7 @@ def resultados():
     tabla_resultados = []
     for cat in categorias:
         conteo = (
-            db.session.query(Candidate.nombre, db.func.count(Vote.id))
+            db.session.query(Candidate.id, Candidate.nombre, db.func.count(Vote.id))
             .join(CandidateCategory, CandidateCategory.candidate_id == Candidate.id)
             .outerjoin(Vote, (Vote.candidate_id == Candidate.id) & (Vote.category_id == cat.id) & (Vote.election_id == cat.election_id))
             .filter(CandidateCategory.category_id == cat.id)
@@ -731,7 +731,15 @@ def resultados():
             .all()
         )
         total_votos = sum(v for _, v in conteo)
-        filas = [{"nombre": n, "votos": v, "pct": round((v / total_votos) * 100) if total_votos else 0} for n, v in conteo]
+        filas = [
+            {
+                "candidate_id": candidate_id,
+                "nombre": nombre,
+                "votos": votos,
+                "pct": round((votos / total_votos) * 100) if total_votos else 0,
+            }
+            for candidate_id, nombre, votos in conteo
+        ]
         tabla_resultados.append({"categoria": cat, "filas": filas, "total_votos": total_votos})
 
     total_general = Vote.query.filter_by(election_id=election.id).count() if election else 0
@@ -740,6 +748,83 @@ def resultados():
         election=election, tabla_resultados=tabla_resultados,
         total_general=total_general, categoria_id=categoria_id,
     )
+
+
+
+@admin_bp.route("/resultados/resetear-candidato/<int:category_id>/<int:candidate_id>", methods=["POST"])
+@login_required
+@admin_required
+@superadmin_required
+def resetear_votos_candidato(category_id, candidate_id):
+    """Pone en cero únicamente los votos de un candidato dentro de una categoría.
+    No modifica votos de otros candidatos/categorías ni borra comprobantes de votación.
+    """
+    election = Election.query.order_by(Election.fecha_inicio.desc()).first()
+    if not election:
+        flash("No existe una elección para modificar.", "danger")
+        return redirect(url_for("admin.resultados"))
+
+    category = Category.query.filter_by(
+        id=category_id, election_id=election.id
+    ).first_or_404()
+
+    candidate = Candidate.query.get_or_404(candidate_id)
+
+    # Verifica que el participante realmente esté inscrito en esa categoría.
+    link = CandidateCategory.query.filter_by(
+        candidate_id=candidate.id, category_id=category.id
+    ).first()
+    if not link:
+        flash("El participante no pertenece a esta categoría.", "danger")
+        return redirect(url_for("admin.resultados"))
+
+    try:
+        total = Vote.query.filter_by(
+            election_id=election.id,
+            category_id=category.id,
+            candidate_id=candidate.id,
+        ).count()
+
+        if total == 0:
+            flash(
+                f"{candidate.nombre} no tiene votos para resetear en {category.nombre}.",
+                "info",
+            )
+            return redirect(url_for("admin.resultados"))
+
+        Vote.query.filter_by(
+            election_id=election.id,
+            category_id=category.id,
+            candidate_id=candidate.id,
+        ).delete(synchronize_session=False)
+
+        AuditLog.log(
+            "resetear_votos_candidato",
+            user_id=current_user.id,
+            entidad="candidates",
+            entidad_id=candidate.id,
+            detalle=(
+                f"Candidato: {candidate.nombre}; categoría: {category.nombre}; "
+                f"votos eliminados: {total}"
+            ),
+            ip=request.remote_addr,
+        )
+        db.session.commit()
+
+        flash(
+            f"Se resetearon {total} voto(s) de {candidate.nombre} "
+            f"en la categoría {category.nombre}. Los demás votos no fueron modificados.",
+            "success",
+        )
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception(
+            "Error reseteando votos del candidato %s en categoría %s",
+            candidate.id, category.id
+        )
+        flash("No se pudieron resetear los votos del participante.", "danger")
+
+    return redirect(url_for("admin.resultados"))
 
 
 @admin_bp.route("/resultados/exportar/<formato>")
@@ -806,76 +891,6 @@ def api_stats():
         "participacion_pct": round((iniciaron / total_votantes) * 100) if total_votantes else 0,
     })
 
-
-
-# --------------------------------------------------------- RESETEO DE VOTACIÓN
-@admin_bp.route("/resultados/resetear-votos", methods=["POST"])
-@login_required
-@admin_required
-@superadmin_required
-def resetear_votos():
-    """Borra votos y comprobantes de la elección indicada.
-    Solo puede ejecutarlo un superadministrador.
-    No elimina votantes, candidatos, categorías ni la elección.
-    """
-    election_id = request.form.get("election_id", type=int)
-    if not election_id:
-        flash("No se indicó una elección válida para resetear.", "danger")
-        return redirect(url_for("admin.resultados"))
-
-    election = Election.query.get_or_404(election_id)
-
-    # Confirmación adicional enviada por el formulario.
-    if request.form.get("confirmar") != "RESET":
-        flash("Debes confirmar el reseteo de votos.", "danger")
-        return redirect(url_for("admin.resultados"))
-
-    try:
-        total_votos = Vote.query.filter_by(election_id=election.id).count()
-        total_recibos = VoteReceipt.query.filter_by(election_id=election.id).count()
-
-        # Primero comprobantes/progreso y después votos.
-        # No se toca el padrón de votantes.
-        VoteReceipt.query.filter_by(election_id=election.id).delete(
-            synchronize_session=False
-        )
-        Vote.query.filter_by(election_id=election.id).delete(
-            synchronize_session=False
-        )
-
-        AuditLog.log(
-            "resetear_votacion",
-            user_id=current_user.id,
-            entidad="elections",
-            entidad_id=election.id,
-            detalle=(
-                f"Elección: {election.nombre}; "
-                f"votos eliminados: {total_votos}; "
-                f"comprobantes eliminados: {total_recibos}"
-            ),
-            ip=request.remote_addr,
-        )
-
-        db.session.commit()
-
-        flash(
-            f"Votación reseteada correctamente. "
-            f"Se eliminaron {total_votos} voto(s) y "
-            f"{total_recibos} comprobante(s). "
-            f"Los votantes pueden volver a votar.",
-            "success",
-        )
-    except Exception:
-        db.session.rollback()
-        current_app.logger.exception(
-            "Error al resetear los votos de la elección %s", election.id
-        )
-        flash(
-            "No se pudo resetear la votación. No se realizó ningún cambio.",
-            "danger",
-        )
-
-    return redirect(url_for("admin.resultados"))
 
 
 # --------------------------------------------------------------- ADMINISTRADORES
