@@ -1,24 +1,84 @@
-{% extends "admin/_layout.html" %} {% block title %}Resultados{% endblock %} {% block admin_content %}
-Resultados
-Exportar CSV
+{% extends "admin/_layout.html" %}
+{% block title %}Resultados{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="fw-bold mb-0">Resultados</h4>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('admin.exportar_resultados', formato='csv') }}">
+      Exportar CSV
+    </a>
+  </div>
+</div>
+
 {% if election and not election.resultados_publicos %}
-⚠️ Los resultados están configurados como privados. Solo visibles para administradores.
+<div class="alert alert-warning small">
+  ⚠️ Los resultados están configurados como privados. Solo visibles para administradores.
+</div>
 {% endif %}
-{{ total_general }}
-Total de votos emitidos
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card p-3">
+      <div class="fs-4 fw-bold">{{ total_general }}</div>
+      <div class="small text-muted">Total de votos emitidos</div>
+    </div>
+  </div>
+</div>
+
 {% for bloque in tabla_resultados %}
-{{ bloque.categoria.nombre }}
-{{ bloque.total_votos }} votos emitidos
-{% for fila in bloque.filas %}
-{{ loop.index }}. {{ fila.nombre }}
-{{ fila.votos }} votos — {{ fila.pct }}% {% if current_user.admin_profile and current_user.admin_profile.nivel == 'superadmin' and fila.votos > 0 %}
-↺ Resetear
-{% endif %}
-{% else %}
-Aún no hay votos para esta categoría.
+<div class="card p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h6 class="fw-bold mb-0">{{ bloque.categoria.nombre }}</h6>
+    <span class="small text-muted">{{ bloque.total_votos }} votos emitidos</span>
+  </div>
 
+  {% for fila in bloque.filas %}
+  <div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center gap-2 small mb-1 flex-wrap">
+      <span class="{{ 'fw-bold' if fila.votos > 0 and loop.index == 1 }}">
+        {{ loop.index }}. {{ fila.nombre }}
+      </span>
+
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="text-muted">{{ fila.votos }} votos — {{ fila.pct }}%</span>
+
+        {% if current_user.admin_profile
+              and current_user.admin_profile.nivel == 'superadmin'
+              and fila.votos > 0 %}
+        <form method="POST"
+              action="{{ url_for('admin.resetear_votos_candidato',
+                                  category_id=bloque.categoria.id,
+                                  candidate_id=fila.candidate_id) }}"
+              class="d-inline"
+              onsubmit="return confirm('¿Resetear SOLO los votos de {{ fila.nombre|e }} en la categoría {{ bloque.categoria.nombre|e }}? Los demás participantes no serán afectados.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit"
+                  class="btn btn-outline-danger btn-sm py-1 px-2"
+                  title="Resetear únicamente los votos de este participante">
+            ↺ Resetear
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="progress" style="height:8px;">
+      <div class="progress-bar {{ 'bg-warning' if fila.votos > 0 and loop.index == 1 else 'bg-secondary' }}"
+           role="progressbar"
+           style="width:{{ fila.pct }}%;"
+           aria-valuenow="{{ fila.pct }}"
+           aria-valuemin="0"
+           aria-valuemax="100">
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <p class="small text-muted mb-0">Aún no hay votos para esta categoría.</p>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No hay categorías para mostrar resultados.</p>
 {% endfor %}
-{% else %}
-No hay categorías para mostrar resultados.
-
-{% endfor %} {% endblock %}
+{% endblock %}
